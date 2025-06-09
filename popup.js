@@ -37,19 +37,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             
             if (response.success) {
-                // Background scriptにクリップボードコピー処理を依頼
-                await browser.runtime.sendMessage({
+                // Background scriptにダウンロード処理を依頼
+                const downloadResponse = await browser.runtime.sendMessage({
                     action: 'downloadMarkdown',
                     data: response.data,
                     filename: generateFilename(response.data.title)
                 });
                 
-                updateStatus('ready', '✅ クリップボードにコピーしました！');
-                
-                // 3秒後にポップアップを閉じる
-                setTimeout(() => {
-                    window.close();
-                }, 3000);
+                if (downloadResponse.success) {
+                    updateStatus('ready', '✅ ファイルダウンロード完了！');
+                    
+                    // 3秒後にポップアップを閉じる
+                    setTimeout(() => {
+                        window.close();
+                    }, 3000);
+                } else {
+                    throw new Error(downloadResponse.error || 'ダウンロードに失敗しました');
+                }
             } else {
                 throw new Error(response.error || '商品データの抽出に失敗しました');
             }
