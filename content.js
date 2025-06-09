@@ -1,4 +1,4 @@
-// content.js - メルカリページからの情報抽出
+// content.js - メルカリページからの情報抽出とデバッグ
 
 // Background scriptとのメッセージ通信リスナー
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -20,20 +20,145 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     
     if (message.action === 'copyToClipboard') {
         try {
-            navigator.clipboard.writeText(message.text).then(() => {
-                console.log('Markdown copied to clipboard successfully');
-                sendResponse({ success: true });
-            }).catch(error => {
-                console.error('Failed to copy to clipboard:', error);
-                sendResponse({ success: false, error: error.message });
-            });
+            // デバッグ用：まずテキストをコンソールに出力
+            console.log('Attempting to copy to clipboard:', message.text.substring(0, 200) + '...');
+            
+            // 複数の方法を試す
+            copyToClipboardMultipleWays(message.text)
+                .then(() => {
+                    console.log('Successfully copied to clipboard');
+                    sendResponse({ success: true });
+                })
+                .catch(error => {
+                    console.error('All clipboard methods failed:', error);
+                    // フォールバック：テキストエリアを作成して手動選択
+                    showTextForManualCopy(message.text);
+                    sendResponse({ success: false, error: error.message });
+                });
         } catch (error) {
-            console.error('Clipboard API not available:', error);
-            sendResponse({ success: false, error: 'Clipboard API not available' });
+            console.error('Clipboard operation failed:', error);
+            sendResponse({ success: false, error: 'Clipboard operation failed' });
         }
         return true;
     }
 });
+
+/**
+ * 複数の方法でクリップボードにコピーを試行
+ */
+async function copyToClipboardMultipleWays(text) {
+    // 方法1: 最新のClipboard API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+            await navigator.clipboard.writeText(text);
+            console.log('Method 1 (navigator.clipboard) succeeded');
+            return;
+        } catch (error) {
+            console.warn('Method 1 failed:', error);
+        }
+    }
+    
+    // 方法2: 旧式のexecCommand API
+    try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-999999px';
+        textarea.style.top = '-999999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const result = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        if (result) {
+            console.log('Method 2 (execCommand) succeeded');
+            return;
+        } else {
+            throw new Error('execCommand returned false');
+        }
+    } catch (error) {
+        console.warn('Method 2 failed:', error);
+    }
+    
+    throw new Error('All clipboard methods failed');
+}
+
+/**
+ * フォールバック：手動コピー用のモーダルを表示
+ */
+function showTextForManualCopy(text) {
+    // モーダル背景
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    // コンテンツ
+    const content = document.createElement('div');
+    content.style.cssText = `
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        max-width: 80%;
+        max-height: 80%;
+        overflow: auto;
+    `;
+    
+    const title = document.createElement('h3');
+    title.textContent = 'Markdownをコピーしてください';
+    title.style.marginTop = '0';
+    
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.cssText = `
+        width: 100%;
+        height: 300px;
+        font-family: monospace;
+        font-size: 12px;
+    `;
+    textarea.readOnly = true;
+    
+    const closeButton = document.createElement('button');
+    closeButton.textContent = '閉じる';
+    closeButton.style.cssText = `
+        margin-top: 10px;
+        padding: 8px 16px;
+        background: #ff4500;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    `;
+    
+    closeButton.onclick = () => {
+        document.body.removeChild(modal);
+    };
+    
+    // 自動選択
+    textarea.onclick = () => {
+        textarea.select();
+    };
+    
+    content.appendChild(title);
+    content.appendChild(textarea);
+    content.appendChild(closeButton);
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+    
+    // 自動選択
+    setTimeout(() => {
+        textarea.select();
+    }, 100);
+}
 
 /**
  * メルカリ商品ページから情報を抽出
