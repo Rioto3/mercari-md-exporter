@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "メルカリ商品詳細MDエクスポート",
+  "version": "1.0.0",
+  "description": "メルカリの商品詳細ページをMarkdown形式でエクスポートするFirefox拡張機能",
+  
+  "permissions": [
+    "activeTab",
+    "downloads"
+  ],
+  
+  "host_permissions": [
+    "https://jp.mercari.com/*"
+  ],
+  
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "メルカリMDエクスポート",
+    "default_icon": {
+      "16": "icon-16.png",
+      "32": "icon-32.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
+    }
+  },
+  
+  "content_scripts": [
+    {
+      "matches": ["https://jp.mercari.com/item/*"],
+      "js": ["content.js"]
+    }
+  ],
+  
+  "background": {
+    "service_worker": "background.js"
+  },
+  
+  "icons": {
+    "16": "icon-16.png",
+    "32": "icon-32.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  }
+}
