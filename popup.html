@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メルカリMDエクスポート</title>
+    <style>
+        body {
+            width: 300px;
+            padding: 20px;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f8f9fa;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            margin: 0 0 8px 0;
+            color: #333;
+        }
+        
+        .header p {
+            font-size: 14px;
+            margin: 0;
+            color: #666;
+        }
+        
+        .status {
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .status.ready {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.processing {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .export-button {
+            width: 100%;
+            padding: 12px;
+            background-color: #ff4500;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .export-button:hover:not(:disabled) {
+            background-color: #e63900;
+        }
+        
+        .export-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .info {
+            margin-top: 16px;
+            padding: 12px;
+            background-color: #e9ecef;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #495057;
+        }
+        
+        .info ul {
+            margin: 8px 0 0 0;
+            padding-left: 16px;
+        }
+        
+        .info li {
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛒 メルカリMDエクスポート</h1>
+        <p>商品詳細をMarkdown形式で出力</p>
+    </div>
+    
+    <div id="status" class="status">
+        <span id="status-text">ページを確認中...</span>
+    </div>
+    
+    <button id="export-button" class="export-button" disabled>
+        MDエクスポート
+    </button>
+    
+    <div class="info">
+        <strong>対応ページ:</strong>
+        <ul>
+            <li>メルカリ商品詳細ページ</li>
+            <li>(jp.mercari.com/item/*)</li>
+        </ul>
+        <strong>出力内容:</strong>
+        <ul>
+            <li>商品名・価格・配送情報</li>
+            <li>商品説明・出品者情報</li>
+            <li>コメント（日時付き）</li>
+        </ul>
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>
