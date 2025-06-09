@@ -37,19 +37,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             
             if (response.success) {
-                // Background scriptにダウンロード処理を依頼
+                // Background scriptにクリップボードコピー処理を依頼
                 await browser.runtime.sendMessage({
                     action: 'downloadMarkdown',
                     data: response.data,
                     filename: generateFilename(response.data.title)
                 });
                 
-                updateStatus('ready', '✅ エクスポート完了しました');
+                updateStatus('ready', '✅ クリップボードにコピーしました！');
                 
-                // 2秒後にポップアップを閉じる
+                // 3秒後にポップアップを閉じる
                 setTimeout(() => {
                     window.close();
-                }, 2000);
+                }, 3000);
             } else {
                 throw new Error(response.error || '商品データの抽出に失敗しました');
             }
