@@ -1,18 +1,27 @@
-// background.js - Markdown生成とクリップボードコピー
+// background.js - Markdown生成とファイルダウンロード
 
 // メッセージリスナー
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'downloadMarkdown') {
         try {
+            console.log('Starting markdown download process');
             const markdown = generateMarkdown(message.data);
-            // クリップボードにコピー
-            copyToClipboard(markdown, sender.tab.id);
-            sendResponse({ success: true });
+            console.log('Generated markdown length:', markdown.length);
+            
+            downloadMarkdownFile(markdown, message.filename)
+                .then(() => {
+                    console.log('Download completed successfully');
+                    sendResponse({ success: true });
+                })
+                .catch(error => {
+                    console.error('Download failed:', error);
+                    sendResponse({ success: false, error: error.message });
+                });
         } catch (error) {
-            console.error('Clipboard copy failed:', error);
+            console.error('Markdown generation failed:', error);
             sendResponse({ success: false, error: error.message });
         }
-        return true;
+        return true; // 非同期レスポンスを示す
     }
 });
 
@@ -89,19 +98,56 @@ function generateMarkdown(data) {
 }
 
 /**
- * クリップボードにテキストをコピー
- * @param {string} text - コピーするテキスト
- * @param {number} tabId - タブID
+ * Markdownファイルをダウンロード
+ * @param {string} markdown - Markdownテキスト
+ * @param {string} filename - ファイル名
  */
-async function copyToClipboard(text, tabId) {
+async function downloadMarkdownFile(markdown, filename) {
     try {
-        // Content scriptでクリップボードにコピーを実行
-        await browser.tabs.sendMessage(tabId, {
-            action: 'copyToClipboard',
-            text: text
+        // Data URLを作成
+        const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        
+        console.log('Created blob URL:', url);
+        console.log('Filename:', filename);
+        
+        // browser.downloads.downloadを使用
+        const downloadId = await browser.downloads.download({
+            url: url,
+            filename: filename,
+            saveAs: false // 直接ダウンロードフォルダに保存
         });
+        
+        console.log('Download started with ID:', downloadId);
+        
+        // ダウンロード完了を待つ
+        return new Promise((resolve, reject) => {
+            const listener = (delta) => {
+                if (delta.id === downloadId && delta.state) {
+                    if (delta.state.current === 'complete') {
+                        browser.downloads.onChanged.removeListener(listener);
+                        URL.revokeObjectURL(url); // メモリを解放
+                        resolve();
+                    } else if (delta.state.current === 'interrupted') {
+                        browser.downloads.onChanged.removeListener(listener);
+                        URL.revokeObjectURL(url);
+                        reject(new Error('Download was interrupted'));
+                    }
+                }
+            };
+            
+            browser.downloads.onChanged.addListener(listener);
+            
+            // タイムアウト（30秒）
+            setTimeout(() => {
+                browser.downloads.onChanged.removeListener(listener);
+                URL.revokeObjectURL(url);
+                reject(new Error('Download timeout'));
+            }, 30000);
+        });
+        
     } catch (error) {
-        console.error('Failed to copy to clipboard:', error);
+        console.error('Download error:', error);
         throw error;
     }
 }
