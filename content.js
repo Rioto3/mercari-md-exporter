@@ -17,6 +17,22 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         return true;
     }
+    
+    if (message.action === 'copyToClipboard') {
+        try {
+            navigator.clipboard.writeText(message.text).then(() => {
+                console.log('Markdown copied to clipboard successfully');
+                sendResponse({ success: true });
+            }).catch(error => {
+                console.error('Failed to copy to clipboard:', error);
+                sendResponse({ success: false, error: error.message });
+            });
+        } catch (error) {
+            console.error('Clipboard API not available:', error);
+            sendResponse({ success: false, error: 'Clipboard API not available' });
+        }
+        return true;
+    }
 });
 
 /**
