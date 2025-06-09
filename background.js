@@ -1,14 +1,15 @@
-// background.js - Markdown生成とファイルダウンロード
+// background.js - Markdown生成とクリップボードコピー
 
 // メッセージリスナー
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'downloadMarkdown') {
         try {
             const markdown = generateMarkdown(message.data);
-            downloadFile(markdown, message.filename);
+            // クリップボードにコピー
+            copyToClipboard(markdown, sender.tab.id);
             sendResponse({ success: true });
         } catch (error) {
-            console.error('Download failed:', error);
+            console.error('Clipboard copy failed:', error);
             sendResponse({ success: false, error: error.message });
         }
         return true;
@@ -88,25 +89,19 @@ function generateMarkdown(data) {
 }
 
 /**
- * ファイルをダウンロード
- * @param {string} content - ファイル内容
- * @param {string} filename - ファイル名
+ * クリップボードにテキストをコピー
+ * @param {string} text - コピーするテキスト
+ * @param {number} tabId - タブID
  */
-async function downloadFile(content, filename) {
-    // Blobを作成
-    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
-    
-    // Data URLを作成
-    const reader = new FileReader();
-    reader.onload = function() {
-        // Downloads APIを使用してファイルをダウンロード
-        browser.downloads.download({
-            url: reader.result,
-            filename: filename,
-            saveAs: false // 自動的にダウンロードフォルダに保存
-        }).catch(error => {
-            console.error('Download failed:', error);
+async function copyToClipboard(text, tabId) {
+    try {
+        // Content scriptでクリップボードにコピーを実行
+        await browser.tabs.sendMessage(tabId, {
+            action: 'copyToClipboard',
+            text: text
         });
-    };
-    reader.readAsDataURL(blob);
+    } catch (error) {
+        console.error('Failed to copy to clipboard:', error);
+        throw error;
+    }
 }
