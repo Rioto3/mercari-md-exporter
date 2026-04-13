@@ -8,7 +8,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
             const markdown = generateMarkdown(message.data);
             console.log('Generated markdown length:', markdown.length);
             
-            downloadMarkdownFile(markdown, message.filename)
+            downloadFile(markdown, message.filename, 'text/markdown;charset=utf-8')
                 .then(() => {
                     console.log('Download completed successfully');
                     sendResponse({ success: true });
@@ -22,6 +22,26 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
             sendResponse({ success: false, error: error.message });
         }
         return true; // 非同期レスポンスを示す
+    }
+
+    if (message.action === 'downloadJson') {
+        try {
+            console.log('Starting JSON download process');
+            const json = JSON.stringify(message.data, null, 2);
+            downloadFile(json, message.filename, 'application/json;charset=utf-8')
+                .then(() => {
+                    console.log('JSON download completed');
+                    sendResponse({ success: true });
+                })
+                .catch(error => {
+                    console.error('JSON download failed:', error);
+                    sendResponse({ success: false, error: error.message });
+                });
+        } catch (error) {
+            console.error('JSON serialization failed:', error);
+            sendResponse({ success: false, error: error.message });
+        }
+        return true;
     }
 });
 
@@ -98,14 +118,14 @@ function generateMarkdown(data) {
 }
 
 /**
- * Markdownファイルをダウンロード
- * @param {string} markdown - Markdownテキスト
+ * ファイルをダウンロード
+ * @param {string} content - テキストコンテンツ
  * @param {string} filename - ファイル名
+ * @param {string} mimeType - MIMEタイプ
  */
-async function downloadMarkdownFile(markdown, filename) {
+async function downloadFile(content, filename, mimeType) {
     try {
-        // Data URLを作成
-        const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+        const blob = new Blob([content], { type: mimeType });
         const url = URL.createObjectURL(blob);
         
         console.log('Created blob URL:', url);

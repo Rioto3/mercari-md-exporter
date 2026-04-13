@@ -19,6 +19,19 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         return true;
     }
+
+    if (message.action === 'extractSearchResults') {
+        try {
+            console.log('Starting search results extraction...');
+            const searchData = extractSearchResults();
+            console.log('Extracted search data:', searchData);
+            sendResponse({ success: true, data: searchData });
+        } catch (error) {
+            console.error('Search results extraction failed:', error);
+            sendResponse({ success: false, error: error.message });
+        }
+        return true;
+    }
 });
 
 /**
@@ -210,4 +223,105 @@ function formatDateTime(date) {
     const minutes = String(date.getMinutes()).padStart(2, '0');
     
     return `${year}/${month}/${day} ${hours}:${minutes}`;
+}
+
+/**
+ * メルカリ検索結果ページから商品リストを抽出
+ * @returns {Object} sample.jsonフォーマットの検索結果データ
+ */
+function extractSearchResults() {
+    const now = new Date();
+    const capturedAt = now.toISOString();
+
+    // URLから検索パラメータを解析
+    const urlObj = new URL(window.location.href);
+    const keyword = urlObj.searchParams.get('keyword') || '';
+    const sortParam = urlObj.searchParams.get('sort') || '';
+    const orderParam = urlObj.searchParams.get('order') || '';
+    const categoryId = urlObj.searchParams.get('category_id') || '';
+    const status = urlObj.searchParams.get('status') || '';
+
+    const sortStr = sortParam && orderParam ? `${sortParam}:${orderParam}` : sortParam;
+
+    // 各商品セルを取得
+    const itemCells = document.querySelectorAll('[data-testid="item-cell"]');
+    const items = [];
+    let soldCount = 0;
+    let onSaleCount = 0;
+
+    itemCells.forEach((cell, index) => {
+        // リンクURLからitemIdを取得
+        const linkEl = cell.querySelector('a[href^="/item/"]');
+        if (!linkEl) return; // スケルトンセルはスキップ
+
+        const href = linkEl.getAttribute('href'); // "/item/m12345678"
+        const itemId = href.split('/').pop();
+        const itemType = 'mercari';
+
+        // aria-labelからタイトル・ステータス・価格を一度に取得
+        // 例: "Samsung 850 EVO 500GB SSDの画像 売り切れ 3,800円"
+        const thumbnailDiv = cell.querySelector('[data-testid="item-thumbnail"]');
+        const ariaLabel = thumbnailDiv ? (thumbnailDiv.getAttribute('aria-label') || '') : '';
+
+        // タイトル: "の画像" まで
+        const titleMatch = ariaLabel.match(/^(.+?)の画像/);
+        const title = titleMatch ? titleMatch[1] : '';
+
+        // ステータス: 売り切れ or 販売中
+        const stickerEl = cell.querySelector('[data-testid="thumbnail-sticker"]');
+        const stickerLabel = stickerEl ? (stickerEl.getAttribute('aria-label') || '') : '';
+        const isSold = stickerLabel === '売り切れ';
+
+        // 価格: aria-label末尾の "3,800円"を解析
+        const priceMatch = ariaLabel.match(/([d,]+)円$/);
+        const priceValue = priceMatch ? parseInt(priceMatch[1].replace(/,/g, ''), 10) : 0;
+        const priceDisplay = priceValue ? `¥${priceMatch[1]}` : '';
+
+        // サムネイルURL
+        const imgEl = cell.querySelector('img');
+        const thumbnailUrl = imgEl ? imgEl.getAttribute('src') : '';
+
+        if (isSold) soldCount++; else onSaleCount++;
+
+        items.push({
+            itemId,
+            itemType,
+            title,
+            price: {
+                currency: 'JPY',
+                value: priceValue,
+                display: priceDisplay
+            },
+            status: {
+                isSold,
+                label: isSold ? '売り切れ' : '販売中'
+            },
+            url: `https://jp.mercari.com/item/${itemId}`,
+            position: index + 1,
+            thumbnailUrl,
+            capturedAt
+        });
+    });
+
+    return {
+        formatVersion: 1,
+        exportedAt: capturedAt,
+        source: {
+            site: 'mercari',
+            pageType: 'search',
+            url: window.location.href,
+            query: keyword,
+            sort: sortStr,
+            filters: {
+                categoryId,
+                status
+            }
+        },
+        summary: {
+            itemCount: items.length,
+            onSaleCount,
+            soldCount
+        },
+        items
+    };
 }
