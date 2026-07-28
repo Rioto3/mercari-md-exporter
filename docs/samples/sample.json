@@ -1,0 +1,40 @@
+{
+    "formatVersion": 1,
+    "exportedAt": "2026-04-13T12:34:56+09:00",
+    "source": {
+        "site": "mercari",
+        "pageType": "search",
+        "url": "https://jp.mercari.com/search?keyword=SSD&sort=created_time&order=desc&category_id=3856&status=sold_out%7Ctrading",
+        "query": "SSD",
+        "sort": "created_time:desc",
+        "filters": {
+            "categoryId": "3856",
+            "status": "sold_out|trading"
+        }
+    },
+    "summary": {
+        "itemCount": 120,
+        "onSaleCount": 0,
+        "soldCount": 120
+    },
+    "items": [
+        {
+            "itemId": "m52689207377",
+            "itemType": "mercari",
+            "title": "Samsung 850 EVO 500GB SSD",
+            "price": {
+                "currency": "JPY",
+                "value": 3800,
+                "display": "¥3,800"
+            },
+            "status": {
+                "isSold": true,
+                "label": "売り切れ"
+            },
+            "url": "https://jp.mercari.com/item/m52689207377",
+            "position": 1,
+            "thumbnailUrl": "https://static.mercdn.net/thumb/item/webp/m52689207377_1.jpg?1776043511",
+            "capturedAt": "2026-04-13T12:34:56+09:00"
+        }
+    ]
+}

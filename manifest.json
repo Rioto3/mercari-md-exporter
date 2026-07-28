@@ -20,7 +20,10 @@
   
   "content_scripts": [
     {
-      "matches": ["https://jp.mercari.com/item/*"],
+      "matches": [
+        "https://jp.mercari.com/item/*",
+        "https://jp.mercari.com/search*"
+      ],
       "js": ["content.js"]
     }
   ],
